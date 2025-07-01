@@ -9,285 +9,262 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{url}
+\usepackage{enumitem}
+\usepackage{subcaption}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\newcommand{\groupcap}{\texttt{group\_cap}}
+\newcommand{\groupcapreq}{\texttt{group\_cap\_req}}
+\newcommand{\groupupdate}{\texttt{group\_update}}
+\newcommand{\groupreq}{\texttt{group\_req}}
+\newcommand{\channelupdate}{\texttt{channel\_update}}
+\newcommand{\groupsize}{\texttt{group\_size}}
+\newcommand{\mincaplimit}{\texttt{min\_cap\_limit}}
+\newcommand{\maxcaplimit}{\texttt{max\_cap\_limit}}
+
 \begin{document}
 
-\title{Conference Paper Title*\\
-{\footnotesize \textsuperscript{*}Note: Sub-titles are not captured for https://ieeexplore.ieee.org  and
-should not be used}
-\thanks{Identify applicable funding agency here. If none, delete this.}
-}
+\title{Routing Method for Balancing Payment Privacy and Low Latency in Blockchain Payment Channel Networks}
 
-\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
-	\IEEEauthorblockA{\textit{dept.~name of organization (of Aff.)} \\
-		\textit{name of organization (of Aff.)}\\
-		City, Country \\
-		email address or ORCID}
+\author{\IEEEauthorblockN{Kohei Sato}
+	\IEEEauthorblockA{\textit{Graduate School of Engineering and Science} \\
+		\textit{Shibaura Institute of Technology}\\
+		Tokyo, Japan \\
+		af20023@shibaura-it.ac.jp}
 	\and
-	\IEEEauthorblockN{2\textsuperscript{nd} Given Name Surname}
-	\IEEEauthorblockA{\textit{dept.~name of organization (of Aff.)} \\
-		\textit{name of organization (of Aff.)}\\
-		City, Country \\
-		email address or ORCID}
-	\and
-	\IEEEauthorblockN{3\textsuperscript{rd} Given Name Surname}
-	\IEEEauthorblockA{\textit{dept.~name of organization (of Aff.)} \\
-		\textit{name of organization (of Aff.)}\\
-		City, Country \\
-		email address or ORCID}
-	\and
-	\IEEEauthorblockN{4\textsuperscript{th} Given Name Surname}
-	\IEEEauthorblockA{\textit{dept.~name of organization (of Aff.)} \\
-		\textit{name of organization (of Aff.)}\\
-		City, Country \\
-		email address or ORCID}
-	\and
-	\IEEEauthorblockN{5\textsuperscript{th} Given Name Surname}
-	\IEEEauthorblockA{\textit{dept.~name of organization (of Aff.)} \\
-		\textit{name of organization (of Aff.)}\\
-		City, Country \\
-		email address or ORCID}
-	\and
-	\IEEEauthorblockN{6\textsuperscript{th} Given Name Surname}
-	\IEEEauthorblockA{\textit{dept.~name of organization (of Aff.)} \\
-		\textit{name of organization (of Aff.)}\\
-		City, Country \\
-		email address or ORCID}
+	\IEEEauthorblockN{Hiroaki Morino}
+	\IEEEauthorblockA{\textit{Graduate School of Engineering and Science} \\
+		\textit{Shibaura Institute of Technology}\\
+		Tokyo, Japan \\
+		morino@shibaura-it.ac.jp}
 }
 
 \maketitle
 
 \begin{abstract}
-	This document is a model and instructions for \LaTeX.
-	This and the IEEEtran.cls file define the components of your paper [title, text, heads, etc.]. *CRITICAL: Do Not Use Symbols, Special Characters, Footnotes,
-	or Math in Paper Title or Abstract.
+	In recent years, Payment Channel Networks (PCNs) have gained attention as a solution to blockchain scalability issues. However, existing methods do not disclose exact link capacities to protect transaction privacy, leading to frequent retries. To address this, we propose grouping links and disclosing only the minimum capacity within each group. This reduces retries while preserving confidentiality. This paper presents a new evaluation of the method and suggests optimal group parameters.
 \end{abstract}
 
 \begin{IEEEkeywords}
-	component, formatting, style, styling, insert.
+	Blockchain, Payment Channel Network, Routing Method, Gossip Protocol
 \end{IEEEkeywords}
 
 \section{Introduction}
-This document is a model and instructions for \LaTeX.
-Please observe the conference page limits. For more information about how to become an IEEE Conference author or how to write your paper, please visit   IEEE Conference Author Center website: https://conferences.ieeeauthorcenter.ieee.org/.
 
-\subsection{Maintaining the Integrity of the Specifications}
+In recent years, payment channels~\cite{poon_dryja_2016} and Payment Channel Networks (PCNs)~\cite{poon_dryja_2016}, which connect these payment channels together, have attracted attention as solutions to blockchain scalability problems~\cite{nakamoto2008bitcoin}.
 
-The IEEEtran class file is used to format your paper and style the text. All margins,
-column widths, line spaces, and text fonts are prescribed; please do not
-alter them. You may note peculiarities. For example, the head margin
-measures proportionately more than is customary. This measurement
-and others are deliberate, using specifications that anticipate your paper
-as one part of the entire proceedings, and not as an independent document.
-Please do not revise any of the current designations.
+In a payment channel (PC), two parties (participants) contribute sufficient funds for future transactions to a blockchain address using special transactions that can only be unlocked with consensus from all participants. The total amount of contributed funds is called channel capacity, which is publicly disclosed on the blockchain. Payments within a PC are executed by changing each participant's share of the contributed funds (called balance), but these changes are not recorded on the blockchain, enabling instant payment confirmation.
 
-\section{Prepare Your Paper Before Styling}
-Before you begin to format your paper, first write and save the content as a
-separate text file. Complete all content and organizational editing before
-formatting. Please note sections~\ref{AA} to~\ref{FAT} below for more information on
-proofreading, spelling and grammar.
+A network composed of multiple connected PCs is called a Payment Channel Network (PCN). In PCNs, senders can safely and quickly transfer funds to recipients they are not directly connected to by routing through multiple PCs using special script transactions called Hash Time Locked Contracts (HTLCs)~\cite{poon_dryja_2016}. Furthermore, PCNs can conceal payment information such as sender, recipient, and payment amount from unrelated third parties, as the balances between PC participants are not publicly disclosed.
 
-Keep your text and graphic files separate until after the text has been
-formatted and styled. Do not number text heads---{\LaTeX} will do that
-for you.
+When viewing PCN users as nodes in a directed graph and PCs as bidirectional links between nodes, each direction of a PC has a capacity corresponding to the upstream node's balance, since it is impossible to send amounts exceeding the upstream node's balance. Transaction fees correspond to link costs. Unlike general communication networks, the link capacity in each direction of a PC represents the share of initially contributed funds per participant, so their sum equals the channel capacity and remains constant, changing only as payments are made.
 
-\subsection{Abbreviations and Acronyms}\label{AA}
-Define abbreviations and acronyms the first time they are used in the text,
-even after they have been defined in the abstract. Abbreviations such as
-IEEE, SI, MKS, CGS, ac, dc, and rms do not have to be defined. Do not use
-abbreviations in the title or heads unless they are unavoidable.
+Since link capacities correspond to balances within PCs and are not disclosed to non-participants, senders cannot know exact link capacities. This forces them to determine payment routes without considering link capacities and retry with different routes each time a payment fails.
 
-\subsection{Units}
-\begin{itemize}
-	\item Use either SI (MKS) or CGS as primary units. (SI units are encouraged.) English units may be used as secondary units (in parentheses). An exception would be the use of English units as identifiers in trade, such as ``3.5-inch disk drive''.
-	\item Avoid combining SI and CGS units, such as current in amperes and magnetic field in oersteds. This often leads to confusion because equations do not balance dimensionally. If you must use mixed units, clearly state the units for each quantity that you use in an equation.
-	\item Do not mix complete spellings and abbreviations of units: ``Wb/m\textsuperscript{2}'' or ``webers per square meter'', not ``webers/m\textsuperscript{2}''. Spell out units when they appear in text: ``\ldots a few henries'', not ``\ldots a few H''.
-	\item Use a zero before decimal points: ``0.25'', not ``.25''. Use ``cm\textsuperscript{3}'', not ``cc''.)
-\end{itemize}
+The fees for each link in a PCN are defined as the sum of a fixed \texttt{base\_fee} charged per payment and a \texttt{prop\_fee} proportional to the payment amount~\cite{lnbolt}. For large payments, consolidating into a single payment rather than splitting into multiple payments can potentially reduce total fees, but links capable of processing such payments are limited. Therefore, determining payment routes without considering link capacities increases retry counts and confirmation delay time.
 
-\subsection{Equations}
-Number equations consecutively. To make your
-equations more compact, you may use the solidus (~/~), the exp function, or
-appropriate exponents. Italicize Roman symbols for quantities and variables,
-but not Greek symbols. Use a long dash rather than a hyphen for a minus
-sign. Punctuate equations with commas or periods when they are part of a
-sentence, as in:
-\begin{equation}
-	a+b=\gamma\label{eq}
-\end{equation}
+Senders search for routes that minimize total link costs under the constraint that each link's capacity exceeds the payment amount~\cite{lnd,clightning,eclair}. If all link capacities in the PCN could be known accurately in advance, senders could simply select the minimum-cost route among those consisting only of links with capacities sufficiently exceeding the payment amount. However, this would require real-time broadcasting of capacity information whenever link capacities change. Such an approach would likely allow third parties to estimate payment amounts and parties from capacity changes, losing the privacy benefits mentioned earlier.
 
-Be sure that the
-symbols in your equation have been defined before or immediately following
-the equation. Use ``\eqref{eq}'', not ``Eq.~\eqref{eq}'' or ``equation \eqref{eq}'', except at
-the beginning of a sentence: ``Equation \eqref{eq} is \ldots''
+Conversely, completely concealing link capacities from non-PC participants prevents senders from using capacity information, requiring them to try routes in order of increasing cost and retry until success, potentially increasing confirmation delay time.
 
-\subsection{\LaTeX-Specific Advice}
+Bitcoin's PCN, the Lightning Network~\cite{poon_dryja_2016,lnbolt}, incorporates mechanisms to suppress payment retries while concealing exact link capacities. In this protocol, when payments fail, \channelupdate{} messages containing information about the relevant link are broadcast, but these messages do not include exact link capacities. Senders calculate link costs using probability functions that decay based on time elapsed since the most recent \channelupdate{} message for each link, seeking routes that avoid links with frequent payment failures~\cite{lnd,Andreescu_2021}. However, since this mechanism does not consider link capacity itself, sending large amounts close to channel capacity can result in multiple retries and very long confirmation times regardless of payment success or failure.
 
-Please use ``soft'' (e.g., \verb|\eqref{Eq}|) cross references instead
-of ``hard'' references (e.g., \verb|(1)|). That will make it possible
-to combine sections, add equations, or change the order of figures or
-citations without having to go through the file line by line.
+Therefore, we propose the Group Capacity Broadcast (GCB) method, which groups multiple links with similar capacities and broadcasts capacity information only at the group level, concealing exact link capacities while reducing payment retries and shortening confirmation delay time~\cite{published_papers/48227240}. This paper presents new evaluations of this method and optimal group parameters based on these evaluations.
 
-Please don't use the \verb|{eqnarray}| equation environment. Use
-\verb|{align}| or \verb|{IEEEeqnarray}| instead. The \verb|{eqnarray}|
-environment leaves unsightly spaces around relation symbols.
+\section{GCB Method}
 
-Please note that the \verb|{subequations}| environment in {\LaTeX}
-will increment the main equation counter even when there are no
-equation numbers displayed. If you forget that, you might write an
-article in which the equation numbers skip from (17) to (20), causing
-the copy editors to wonder if you've discovered a new method of
-counting.
+This section describes the overview of the GCB method.
 
-	{\BibTeX} does not work by magic. It doesn't get the bibliographic
-data from thin air but from \texttt{.bib} files. If you use {\BibTeX} to produce a
-bibliography you must send the \texttt{.bib} files.
+\subsection{Overview}
 
-	{\LaTeX} can't read your mind. If you assign the same label to a
-subsubsection and a table, you might find that Table I has been cross
-referenced as Table IV-B3.
+In the GCB method, multiple links form groups and update group capacity through the following steps:
+\begin{enumerate}
+	\item A group constructor broadcasts \groupreq{} messages to recruit links within the range of \mincaplimit{} to \maxcaplimit{}.
+	\item When the group constructor receives \groupsize{} responses, it finalizes the group and requests group capacity calculation (\groupcapreq{}) from each link's source node.
+	\item Upstream nodes of links belonging to the group start a protocol to find the minimum capacity among group links and broadcast the result (group capacity) via \groupupdate{} messages.
+	\item When actual payments change link capacities, the sender simultaneously notifies all groups containing route links via \groupcapreq{} messages to recalculate and update group capacity.
+\end{enumerate}
 
-{\LaTeX} does not have precognitive abilities. If you put a
-\verb|\label| command before the command that updates the counter it's
-supposed to be using, the label will pick up the last counter to be
-cross referenced instead. In particular, a \verb|\label| command
-should not go before the caption of a figure or a table.
-
-Do not use \verb|\nonumber| inside the \verb|{array}| environment. It
-will not stop equation numbers inside \verb|{array}| (there won't be
-any anyway) and it might stop a wanted equation number in the
-surrounding equation.
-
-\subsection{Some Common Mistakes}\label{SCM}
-\begin{itemize}
-	\item The word ``data'' is plural, not singular.
-	\item The subscript for the permeability of vacuum $\mu_{0}$, and other common scientific constants, is zero with subscript formatting, not a lowercase letter ``o''.
-	\item In American English, commas, semicolons, periods, question and exclamation marks are located within quotation marks only when a complete thought or name is cited, such as a title or full quotation. When quotation marks are used, instead of a bold or italic typeface, to highlight a word or phrase, punctuation should appear outside of the quotation marks. A parenthetical phrase or statement at the end of a sentence is punctuated outside of the closing parenthesis (like this). (A parenthetical sentence is punctuated within the parentheses.)
-	\item A graph within a graph is an ``inset'', not an ``insert''. The word alternatively is preferred to the word ``alternately'' (unless you really mean something that alternates).
-	\item Do not use the word ``essentially'' to mean ``approximately'' or ``effectively''.
-	\item In your paper title, if the words ``that uses'' can accurately replace the word ``using'', capitalize the ``u''; if not, keep using lower-cased.
-	\item Be aware of the different meanings of the homophones ``affect'' and ``effect'', ``complement'' and ``compliment'', ``discreet'' and ``discrete'', ``principal'' and ``principle''.
-	\item Do not confuse ``imply'' and ``infer''.
-	\item The prefix ``non'' is not a word; it should be joined to the word it modifies, usually without a hyphen.
-	\item There is no period after the ``et'' in the Latin abbreviation ``et al.''.
-	\item The abbreviation ``i.e.'' means ``that is'', and the abbreviation ``e.g.'' means ``for example''.
-\end{itemize}
-An excellent style manual for science writers is \cite{b7}.
-
-\subsection{Authors and Affiliations}\label{AAA}
-\textbf{The class file is designed for, but not limited to, six authors.} A
-minimum of one author is required for all conference articles. Author names
-should be listed starting from left to right and then moving down to the
-next line. This is the author sequence that will be used in future citations
-and by indexing services. Names should not be listed in columns nor group by
-affiliation. Please keep your affiliations as succinct as possible (for
-example, do not differentiate among departments of the same organization).
-
-\subsection{Identify the Headings}\label{ITH}
-Headings, or heads, are organizational devices that guide the reader through
-your paper. There are two types: component heads and text heads.
-
-Component heads identify the different components of your paper and are not
-topically subordinate to each other. Examples include Acknowledgments and
-References and, for these, the correct style to use is ``Heading 5''. Use
-``figure caption'' for your Figure captions, and ``table head'' for your
-table title. Run-in heads, such as ``Abstract'', will require you to apply a
-style (in this case, italic) in addition to the style provided by the drop
-down menu to differentiate the head from the text.
-
-Text heads organize the topics on a relational, hierarchical basis. For
-example, the paper title is the primary text head because all subsequent
-material relates and elaborates on this one topic. If there are two or more
-sub-topics, the next level head (uppercase Roman numerals) should be used
-and, conversely, if there are not at least two sub-topics, then no subheads
-should be introduced.
-
-\subsection{Figures and Tables}\label{FAT}
-\paragraph{Positioning Figures and Tables} Place figures and tables at the top and
-bottom of columns. Avoid placing them in the middle of columns. Large
-figures and tables may span across both columns. Figure captions should be
-below the figures; table heads should appear above the tables. Insert
-figures and tables after they are cited in the text. Use the abbreviation
-``Fig.~\ref{fig}'', even at the beginning of a sentence.
-
-\begin{table}[htbp]
-	\caption{Table Type Styles}
-	\begin{center}
-		\begin{tabular}{|c|c|c|c|}
-			\hline
-			\textbf{Table} & \multicolumn{3}{|c|}{\textbf{Table Column Head}}                                                         \\
-			\cline{2-4}
-			\textbf{Head}  & \textbf{\textit{Table column subhead}}           & \textbf{\textit{Subhead}} & \textbf{\textit{Subhead}} \\
-			\hline
-			copy           & More table copy$^{\mathrm{a}}$                   &                           &                           \\
-			\hline
-			\multicolumn{4}{l}{$^{\mathrm{a}}$Sample of a Table footnote.}
-		\end{tabular}
-		\label{tab1}
-	\end{center}
-\end{table}
+The relationship between links in a group and group capacity is shown in Fig.~\ref{fig:capacities_in_group}. Since each link's actual capacity is at least the group capacity, senders can theoretically determine in advance during route exploration whether payment is possible on any route (or if no route exists), reducing payment completion time. Furthermore, external third parties observing group capacity changes cannot identify which specific link caused the change, making it difficult to track specific link capacities continuously and significantly hampering balance estimation for PC participants.
 
 \begin{figure}[htbp]
-	\centerline{\includegraphics{fig1.png}}
-	\caption{Example of a figure caption.}
-	\label{fig}
+	\centerline{\includegraphics[width=0.85\linewidth]{fig/capacities_in_group}}
+	\caption{Example of Capacity of Links Belonging to a Group and the Group Capacity}
+	\label{fig:capacities_in_group}
 \end{figure}
 
-Figure Labels: Use 8 point Times New Roman for Figure labels. Use words
-rather than symbols or abbreviations when writing Figure axis labels to
-avoid confusing the reader. As an example, write the quantity
-``Magnetization'', or ``Magnetization, M'', not just ``M''. If including
-units in the label, present them within parentheses. Do not label axes only
-with units. In the example, write ``Magnetization (A/m)'' or ``Magnetization
-\{A[m(1)]\}'', not just ``A/m''. Do not label axes with a ratio of
-quantities and units. For example, write ``Temperature (K)'', not
-``Temperature/K''.
+\subsection{Group Construction}
 
-\section*{Acknowledgment}
+\subsubsection{Link Recruitment}
 
-The preferred spelling of the word ``acknowledgment'' in America is without
-an ``e'' after the ``g''. Avoid the stilted expression ``one of us (R.~B.
-G.) thanks $\ldots$''. Instead, try ``R.~B.~G. thanks$\ldots$''. Put sponsor
-acknowledgments in the unnumbered footnote on the first page.
+For group construction, we assume sufficient links exist in the PCN for grouping. All PC participants can act as group constructors, defining lower limit \mincaplimit{} and upper limit \maxcaplimit{} for link capacities in their group, along with the number of links \groupsize{} needed to establish the group, broadcasting \groupreq{} messages at regular intervals.
 
-\section*{References}
+When receiving \groupreq{} messages from other nodes, if a node has links satisfying the capacity conditions, it compares the sender's node ID with its own (treating both as integers). To avoid group overlap, it responds only if the sender's ID is larger and stops its own group construction. When a constructor receives \groupsize{} responses to \groupreq{} messages, it finalizes the group links and simultaneously sends group capacity calculation requests \groupcapreq{} with unique \texttt{group\_update\_id} to all source nodes of group links.
 
-Please number citations consecutively within brackets \cite{b1}. The
-sentence punctuation follows the bracket~\cite{b2}. Refer simply to the reference
-number, as in~\cite{b3}---do not use ``Ref.~\cite{b3}'' or ``reference~\cite{b3}'' except at
-the beginning of a sentence: ``Reference~\cite{b3} was the first $\ldots$''
+\subsubsection{Group Capacity Calculation}
 
-Number footnotes separately in superscripts. Place the actual footnote at
-the bottom of the column in which it was cited. Do not put footnotes in the
-abstract or reference list. Use letters for table footnotes.
+For a group $G$ consisting of $k$ links, the procedure for finding only the minimum capacity (group capacity) among group links without directly sharing individual link capacities is as follows. Source nodes $V_{i}^{G}(i=0,1,\ldots,k-1)$ of links $E_{i}^{G}(i=0,1,\ldots,k-1)$ belonging to group $G$ each independently wait a random time after receiving the group capacity calculation request, then send \groupcap{} messages containing their link's actual capacity, a unique random value $r_{i}$, and \texttt{group\_update\_id} to the next indexed node $V_{j}^{G}$ where $j=(i+1)\bmod k$.
 
-Unless there are six authors or more give all authors' names; do not use
-``et al.''. Papers that have not been published, even if they have been
-submitted for publication, should be cited as ``unpublished'' \cite{b4}. Papers
-that have been accepted for publication should be cited as ``in press'' \cite{b5}.
-Capitalize only the first word in a paper title, except for proper nouns and
-element symbols.
+Upon receiving this, node $V_{j}^{G}$ overwrites the value if link $E_{j}^{G}$'s capacity is smaller than the received value and forwards the \groupcap{} message to node $V_{(j+1)\bmod k}^{G}$. Among the $k$ times node $V_{j}^{G}$ receives the same \groupcap{} message, it forwards without updating the value for randomly selected $\lfloor \frac{k}{2} \rfloor$ times.
 
-For papers published in translation journals, please give the English
-citation first, followed by the original foreign-language citation \cite{b6}.
+When node $V_{i}^{G}$ receives a \groupcap{} message containing its unique random value $r_{i}$, it considers this contains the minimum capacity value updated by all group links and broadcasts this value along with \texttt{group\_update\_id} as a \groupupdate{} message. All PCN nodes collect $k$ \groupupdate{} messages with the same \texttt{group\_update\_id} and consider the most frequently appearing value as group $G$'s group capacity, updating their locally maintained PCN topology information.
+
+The group capacity obtained this way makes it difficult for third parties to identify which link actually has the minimum value, making it hard to track capacity changes to specific links. This makes estimating payment amounts and parties for specific links difficult, maintaining payment information confidentiality.
+
+\begin{figure}[htbp]
+	\centerline{\includegraphics[width=1\linewidth]{fig/group_cap_handover}}
+	\caption{Example of \groupcap{} Message Propagation}
+	\label{fig:group_cap_sequence}
+\end{figure}
+
+\subsection{Payment Using Group Capacity Information}
+
+When group capacity is broadcast, senders estimate capacity for each link as follows:
+\begin{itemize}
+	\item If a link belongs to some group: use that group's capacity as the link's capacity
+	\item If not in any group: use the publicly disclosed channel capacity as link capacity
+\end{itemize}
+
+When senders perform actual route exploration, they search for minimum-cost routes similar to Lightning Network~\cite{poon_dryja_2016,lnd,eclair,clightning}, but use the above values as link capacities. That is, senders use only links whose estimated capacity exceeds the payment amount and select the minimum-cost route.
+
+Upon successful payment, group capacity update requests are simultaneously sent to all groups containing route links, updating group capacity to the latest state through procedures similar to the group capacity calculation.
+
+\subsection{Group Capacity Update}
+
+When payments are executed, capacities of links on the payment route change. Therefore, senders simultaneously send group capacity update requests to all member nodes of groups containing route links, causing them to recalculate group capacity similar to the group capacity calculation procedure.
+
+Although upstream nodes of capacity-changed links could directly initiate group capacity updates, if the relevant link had the minimum capacity in the group, it could be associated with the minimum value and observed. To avoid this, our method has senders simultaneously request all group members, ensuring all nodes start update processing independently and simultaneously.
+
+When group capacity updates cause values to exceed initially set \mincaplimit{} or \maxcaplimit{}, the group is closed. Upon closure confirmation, \groupupdate{} messages containing invalid group capacity are broadcast to notify group closure. Upstream nodes of closed group links form new groups through the link recruitment procedure.
+
+\section{Performance Evaluation}
+
+This section evaluates how GCB method group construction parameters affect performance and examines parameters that balance payment information confidentiality with payment performance.
+
+\subsection{Evaluation Method}
+
+\subsubsection{Parameters}
+
+Group construction parameters are:
+\begin{itemize}
+	\item \groupsize{}: Number of links in a group
+	\item $\alpha$: Parameter determining group capacity conditions \mincaplimit{} and \maxcaplimit{} where $0 < \alpha < 1$
+\end{itemize}
+
+When the group constructor's initial link registered in the group is $E_{const}$ with capacity $cap(E_{const})$, group capacity conditions \mincaplimit{} and \maxcaplimit{} are set using parameter $\alpha (0 < \alpha < 1)$ as:
+\begin{align}
+	\mincaplimit & = cap(E_{const}) \times (1-\alpha) \\
+	\maxcaplimit & = cap(E_{const}) \times (1+\alpha)
+\end{align}
+
+\subsubsection{Evaluation Metrics}
+
+Main evaluation metrics are:
+\begin{itemize}
+	\item Success Rate: Ratio of successful payments to all attempted payments
+	\item Latency (Success): Average delay time until successful payment confirmation [ms]
+	\item Latency (Fail): Average delay time until failed payment confirmation [ms]
+	\item Fail Before Send Rate (FBSR): Probability of detecting no viable route before sending and failing without retries
+	\item Fail After Send Rate (FASR): Probability of discovering no viable route after sending and failing after multiple retries
+	\item Coverage: Ratio of links belonging to groups to all PCN links
+	\item CUL: Link capacity loss rate due to group membership
+\end{itemize}
+
+\subsubsection{Simulation Conditions}
+
+We extended the payment channel network simulator CLoTH~\cite{CONOSCENTI2021100717}, which accurately reproduces Lightning Network HTLCs, implementing the GCB method along with two comparison methods:
+\begin{itemize}
+	\item LN method: Lightning Network method using \channelupdate{} for probabilistic payment route determination
+	\item RBB method: Real-time Balance Broadcast (complete disclosure of all link capacities without privacy consideration)
+\end{itemize}
+
+We used a Lightning Network snapshot from December 17, 2020, with 6005 nodes and 60913 links. This data was obtained from LND's \texttt{describegraph} command, containing all publicly available information identical to the actual network. Since initial PC balances are undisclosed, we set them using uniformly distributed random numbers. We performed 5000 payments with amounts following normal distribution (mean $\mu = 10000$ sats, variance $\sigma = \mu \times 0.1$) and uniformly distributed random sender/recipient selection.
+
+\subsection{Privacy Evaluation}
+
+We simulated attacks where malicious nodes $V_{m}^{G}$ in groups record all received \groupcap{} messages and randomly select target link $E_{i}^{G}$ capacities to estimate payment amounts, senders, and recipients from capacity changes. Results show that attack success rates decrease with larger \groupsize{}, particularly dropping below 1\% when $\groupsize > 5$, making payment information identification extremely difficult, as shown in Fig.~\ref{fig:group_size_vs_attack_resistance}.
+
+\begin{figure}[htbp]
+	\centerline{\includegraphics[width=\linewidth]{fig/group_size_vs_attack_resistance}}
+	\caption{Variation of Attack Success Rate with respect to \groupsize{}}
+	\label{fig:group_size_vs_attack_resistance}
+\end{figure}
+
+\subsection{Performance Parameter Evaluation}
+
+We define appropriate parameter regions as those where success rate decrease compared to RBB method is less than 0.005 and FASR increase is less than 0.005. In this region (success rate > 0.729 and FASR < 0.005), maximum average confirmation delay for successful payments was 648 ms at $\groupsize=4, \alpha=0.05$, nearly identical to retry-free RBB method. Maximum average confirmation delay for failed payments was 8.87 ms at $\groupsize=10, \alpha=0.1$, sufficiently smaller than LN method.
+
+This occurs because grouping enables senders to know reliably sendable amounts on group links, allowing exclusion of links with insufficient capacity before route specification, reducing FASR and retry counts to nearly zero.
+
+Based on privacy and performance considerations, we identify $\groupsize=10, \alpha=0.1$ as optimal parameters balancing high success rates with short confirmation delays while maximizing attack resistance. The performance characteristics with varying \groupsize{} and $\alpha$ are shown in Fig.~\ref{fig:group_params_vs_success_rate}.
+
+\begin{figure*}[htbp]
+	\centering
+	\begin{subfigure}{0.248\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{fig/group_limit_rate_and_group_size_heatmap_success_rate}
+		\caption{Success Rate}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.254\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{fig/group_limit_rate_and_group_size_heatmap_fail_after_send_rate}
+		\caption{Fail After Send Rate (FASR)}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.243\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{fig/group_limit_rate_and_group_size_heatmap_latency_success}
+		\caption{Latency (Success) [ms]}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.2375\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{fig/group_limit_rate_and_group_size_heatmap_latency_fail}
+		\caption{Latency (Fail) [ms]}
+	\end{subfigure}
+	\caption{Performance metrics with varying \groupsize{} and $\alpha$}
+	\label{fig:group_params_vs_success_rate}
+\end{figure*}
+
+\begin{table}[htbp]
+	\caption{Success Rate, FASR and Latency of LN and RBB}
+	\centering
+	\label{tab:result_group_and_ideal}
+	\begin{tabular}{r|cccc}
+		    & Success Rate & FASR  & Latency (Success) [ms] & Latency (Fail) [ms] \\
+		\hline
+		LN  & 0.708        & 0.160 & 826                    & 415                 \\
+		RBB & 0.734        & 0.000 & 643                    & 0.000               \\
+	\end{tabular}
+\end{table}
+
+\subsection{Latency Evaluation}
+
+Using optimal parameters $\groupsize=10, \alpha=0.1$, we compared GCB and LN methods for varying average payment amounts. Results show that while LN method confirmation delays increase significantly with payment amount, GCB method delays increase relatively little. For large payments, LN method experiences many retries due to considering only failure frequency without link capacity, prolonging confirmation time. GCB method eliminates unnecessary retries by disclosing group capacity, enabling immediate pre-send determination of impossible payments and minimizing confirmation delay increases even for large amounts, as demonstrated in Fig.~\ref{fig:pmt_amt_vs_time}.
+
+\begin{figure}[htbp]
+	\centerline{\includegraphics[width=\linewidth]{fig/pmt_amt_vs_time}}
+	\caption{Latency of Sending Payment vs Payment Amount for Successful Cases Only}
+	\label{fig:pmt_amt_vs_time}
+\end{figure}
+
+\section{Conclusion}
+
+This paper presented new evaluations of the GCB method, which groups links in Payment Channel Networks and broadcasts minimum link capacities in real-time as group capacity, maintaining payment information confidentiality while preserving success rates comparable to conventional methods and reducing confirmation delays for successful payments. We identified appropriate values for group capacity and group size parameters. Future work includes verifying payment information confidentiality under more diverse attack models.
 
 \begin{thebibliography}{00}
-	\bibitem{b1} G. Eason, B. Noble, and I. N. Sneddon, ``On certain integrals of Lipschitz-Hankel type involving products of Bessel functions,'' Phil. Trans. Roy. Soc. London, vol. A247, pp. 529--551, April 1955.
-	\bibitem{b2} J. Clerk Maxwell, A Treatise on Electricity and Magnetism, 3rd ed., vol. 2. Oxford: Clarendon, 1892, pp.68--73.
-	\bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
-	\bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
-	\bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
-	\bibitem{b6} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, ``Electron spectroscopy studies on magneto-optical media and plastic substrate interface,'' IEEE Transl. J. Magn. Japan, vol. 2, pp. 740--741, August 1987 [Digests 9th Annual Conf. Magnetics Japan, p. 301, 1982].
-	\bibitem{b7} M. Young, The Technical Writer's Handbook. Mill Valley, CA: University Science, 1989.
-	\bibitem{b8} D. P. Kingma and M. Welling, ``Auto-encoding variational Bayes,'' 2013, arXiv:1312.6114. [Online]. Available: https://arxiv.org/abs/1312.6114
-	\bibitem{b9} S. Liu, ``Wi-Fi Energy Detection Testbed (12MTC),'' 2023, gitHub repository. [Online]. Available: https://github.com/liustone99/Wi-Fi-Energy-Detection-Testbed-12MTC
-	\bibitem{b10} ``Treatment episode data set: discharges (TEDS-D): concatenated, 2006 to 2009.'' U.S. Department of Health and Human Services, Substance Abuse and Mental Health Services Administration, Office of Applied Studies, August, 2013, DOI:10.3886/ICPSR30122.v2
-	\bibitem{b11} K. Eves and J. Valasek, ``Adaptive control for singularly perturbed systems examples,'' Code Ocean, Aug. 2023. [Online]. Available: https://codeocean.com/capsule/4989235/tree
+	\bibitem{nakamoto2008bitcoin} S. Nakamoto, ``Bitcoin: A peer-to-peer electronic cash system,'' 2008.
+	\bibitem{poon_dryja_2016} J. Poon and T. Dryja, ``The bitcoin lightning network: Scalable off-chain instant payments,'' 2016.
+	\bibitem{lnbolt} ``BOLT: Basis of Lightning Technology,'' \url{https://github.com/lightningnetwork/lightning-rfc}.
+	\bibitem{lnd} ``Lightning Network Daemon,'' \url{https://github.com/lightningnetwork/lnd}.
+	\bibitem{clightning} ``Core Lightning,'' \url{https://github.com/ElementsProject/lightning}.
+	\bibitem{eclair} ``Eclair,'' \url{https://github.com/ACINQ/eclair}.
+	\bibitem{Andreescu_2021} O. Andreescu et al., ``Optimizing payment routing in the lightning network,'' in Proc. IEEE INFOCOM, 2021.
+	\bibitem{published_papers/48227240} K. Sato and H. Morino, ``Group capacity broadcast method for payment channel networks,'' Technical Report, 2023.
+	\bibitem{CONOSCENTI2021100717} M. Conoscenti et al., ``CLoTH: A simulator for HTLC payment networks,'' Future Generation Computer Systems, vol. 118, pp. 1--17, 2021.
 \end{thebibliography}
-
-\vspace{12pt}
-\color{red}
-IEEE conference templates contain guidance text for composing and formatting conference papers. Please ensure that all template text is removed from your conference paper prior to submission to the conference. Failure to remove the template text from your paper may result in your paper not being published.
 
 \end{document}
