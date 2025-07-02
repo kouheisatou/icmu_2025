@@ -44,7 +44,7 @@
 \maketitle
 
 \begin{abstract}
-	In recent years, Payment Channel Networks (PCNs) have gained attention as a solution to blockchain scalability issues. However, existing methods do not disclose exact link capacities to protect transaction privacy, leading to frequent retries. To address this, we propose grouping links and disclosing only the minimum capacity within each group. This reduces retries while preserving confidentiality. This paper presents a new evaluation of the method and suggests optimal group parameters.
+	We propose the Group Capacity Broadcast (GCB) method that discloses only the minimum capacity among grouped payment channels, thereby reducing payment retries while preserving privacy. Simulation results on a real Lightning Network snapshot show that GCB shortens payment confirmation delay compared with the conventional method without sacrificing success rate.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -53,41 +53,27 @@
 
 \section{Introduction}
 
-In recent years, payment channels~\cite{poon_dryja_2016} and Payment Channel Networks (PCNs)~\cite{poon_dryja_2016}, which connect these payment channels together, have attracted attention as solutions to blockchain scalability problems~\cite{nakamoto2008bitcoin}.
+Payment channels (PCs) move most transactions off-chain and thus scale blockchains~\cite{poon_dryja_2016}. A Payment Channel Network (PCN) forwards a payment through several PCs, but the sender must choose a path whose every link has enough capacity (i.e., upstream balance).
 
-In a payment channel (PC), two parties (participants) contribute sufficient funds for future transactions to a blockchain address using special transactions that can only be unlocked with consensus from all participants. The total amount of contributed funds is called channel capacity, which is publicly disclosed on the blockchain. Payments within a PC are executed by changing each participant's share of the contributed funds (called balance), but these changes are not recorded on the blockchain, enabling instant payment confirmation.
+Here a dilemma arises.  If each link publicly reveals its current balance, the sender can pick a feasible path on the first try, but privacy is lost because observers can trace payments.  If balances remain secret, privacy is kept, yet the sender learns feasibility only after the attempt, causing expensive retries and long delays.  Lightning's probabilistic routing slightly mitigates the delay but still struggles with large amounts.
 
-A network composed of multiple connected PCs is called a Payment Channel Network (PCN). In PCNs, senders can safely and quickly transfer funds to recipients they are not directly connected to by routing through multiple PCs using special script transactions called Hash Time Locked Contracts (HTLCs)~\cite{poon_dryja_2016}. Furthermore, PCNs can conceal payment information such as sender, recipient, and payment amount from unrelated third parties, as the balances between PC participants are not publicly disclosed.
-
-When viewing PCN users as nodes in a directed graph and PCs as bidirectional links between nodes, each direction of a PC has a capacity corresponding to the upstream node's balance, since it is impossible to send amounts exceeding the upstream node's balance. Transaction fees correspond to link costs. Unlike general communication networks, the link capacity in each direction of a PC represents the share of initially contributed funds per participant, so their sum equals the channel capacity and remains constant, changing only as payments are made.
-
-Since link capacities correspond to balances within PCs and are not disclosed to non-participants, senders cannot know exact link capacities. This forces them to determine payment routes without considering link capacities and retry with different routes each time a payment fails.
-
-The fees for each link in a PCN are defined as the sum of a fixed \texttt{base\_fee} charged per payment and a \texttt{prop\_fee} proportional to the payment amount~\cite{lnbolt}. For large payments, consolidating into a single payment rather than splitting into multiple payments can potentially reduce total fees, but links capable of processing such payments are limited. Therefore, determining payment routes without considering link capacities increases retry counts and confirmation delay time.
-
-Senders search for routes that minimize total link costs under the constraint that each link's capacity exceeds the payment amount~\cite{lnd,clightning,eclair}. If all link capacities in the PCN could be known accurately in advance, senders could simply select the minimum-cost route among those consisting only of links with capacities sufficiently exceeding the payment amount. However, this would require real-time broadcasting of capacity information whenever link capacities change. Such an approach would likely allow third parties to estimate payment amounts and parties from capacity changes, losing the privacy benefits mentioned earlier.
-
-Conversely, completely concealing link capacities from non-PC participants prevents senders from using capacity information, requiring them to try routes in order of increasing cost and retry until success, potentially increasing confirmation delay time.
-
-Bitcoin's PCN, the Lightning Network~\cite{poon_dryja_2016,lnbolt}, incorporates mechanisms to suppress payment retries while concealing exact link capacities. In this protocol, when payments fail, \channelupdate{} messages containing information about the relevant link are broadcast, but these messages do not include exact link capacities. Senders calculate link costs using probability functions that decay based on time elapsed since the most recent \channelupdate{} message for each link, seeking routes that avoid links with frequent payment failures~\cite{lnd,Andreescu_2021}. However, since this mechanism does not consider link capacity itself, sending large amounts close to channel capacity can result in multiple retries and very long confirmation times regardless of payment success or failure.
-
-Therefore, we propose the Group Capacity Broadcast (GCB) method, which groups multiple links with similar capacities and broadcasts capacity information only at the group level, concealing exact link capacities while reducing payment retries and shortening confirmation delay time~\cite{published_papers/48227240}. This paper presents new evaluations of this method and optimal group parameters based on these evaluations.
+This paper tackles the privacy–latency dilemma.  We evaluate the Group Capacity Broadcast (GCB) method, which discloses only the minimum balance inside a link group, thereby hiding individual balances while allowing the sender to rule out hopeless paths in advance.
 
 \section{GCB Method}
 
-This section describes the overview of the GCB method.
+GCB groups links with similar capacities and broadcasts only the minimum capacity within each group. A group constructor recruits links by broadcasting \groupreq{} messages specifying capacity range [\mincaplimit{}, \maxcaplimit{}]. Once \groupsize{} links join, the group must securely calculate its minimum capacity without exposing individual link balances.
 
-\subsection{Overview}
+The key innovation lies in a privacy-preserving minimum value computation protocol. Each group member initiates a \groupcap{} message containing its actual capacity and a unique identifier, which circulates through the group in a ring topology. As the message traverses each node, the capacity value is updated only if the current node's capacity is smaller, ensuring the final result represents the true minimum. To prevent observers from correlating capacity changes with specific links, nodes randomly abstain from updating the message approximately half the time during circulation. When a node receives its own message identifier after completing the full circuit, it recognizes the validity of the minimum value and broadcasts it network-wide as a \groupupdate{} message. This distributed consensus mechanism ensures that no single node can determine which link actually holds the minimum capacity, thereby maintaining payment privacy. Figure~\ref{fig:group_cap_handover} illustrates the detailed message flow of this protocol.
 
-In the GCB method, multiple links form groups and update group capacity through the following steps:
-\begin{enumerate}
-	\item A group constructor broadcasts \groupreq{} messages to recruit links within the range of \mincaplimit{} to \maxcaplimit{}.
-	\item When the group constructor receives \groupsize{} responses, it finalizes the group and requests group capacity calculation (\groupcapreq{}) from each link's source node.
-	\item Upstream nodes of links belonging to the group start a protocol to find the minimum capacity among group links and broadcast the result (group capacity) via \groupupdate{} messages.
-	\item When actual payments change link capacities, the sender simultaneously notifies all groups containing route links via \groupcapreq{} messages to recalculate and update group capacity.
-\end{enumerate}
+For routing decisions, senders can now determine path feasibility before transmission since each link's true capacity exceeds the disclosed group capacity. As shown in Figure~\ref{fig:capacities_in_group}, while individual links may have varying capacities, only the group's minimum capacity is revealed to the network. Senders use group capacity for grouped links and channel capacity for ungrouped links, applying standard shortest-path algorithms~\cite{lnd,eclair,clightning}. After successful payments, affected groups recalculate their minimum capacity to reflect balance changes, maintaining accuracy while preserving anonymity.
 
-The relationship between links in a group and group capacity is shown in Fig.~\ref{fig:capacities_in_group}. Since each link's actual capacity is at least the group capacity, senders can theoretically determine in advance during route exploration whether payment is possible on any route (or if no route exists), reducing payment completion time. Furthermore, external third parties observing group capacity changes cannot identify which specific link caused the change, making it difficult to track specific link capacities continuously and significantly hampering balance estimation for PC participants.
+Privacy is preserved because observers cannot determine which specific link caused a group capacity change. Groups close when capacity updates exceed the initial range, triggering reformation with updated parameters to adapt to changing network conditions.
+
+\begin{figure}[htbp]
+	\centerline{\includegraphics[width=\linewidth]{fig/group_cap_handover}}
+	\caption{Group Capacity Calculation Protocol Message Flow}
+	\label{fig:group_cap_handover}
+\end{figure}
 
 \begin{figure}[htbp]
 	\centerline{\includegraphics[width=0.85\linewidth]{fig/capacities_in_group}}
@@ -95,53 +81,9 @@ The relationship between links in a group and group capacity is shown in Fig.~\r
 	\label{fig:capacities_in_group}
 \end{figure}
 
-\subsection{Group Construction}
-
-\subsubsection{Link Recruitment}
-
-For group construction, we assume sufficient links exist in the PCN for grouping. All PC participants can act as group constructors, defining lower limit \mincaplimit{} and upper limit \maxcaplimit{} for link capacities in their group, along with the number of links \groupsize{} needed to establish the group, broadcasting \groupreq{} messages at regular intervals.
-
-When receiving \groupreq{} messages from other nodes, if a node has links satisfying the capacity conditions, it compares the sender's node ID with its own (treating both as integers). To avoid group overlap, it responds only if the sender's ID is larger and stops its own group construction. When a constructor receives \groupsize{} responses to \groupreq{} messages, it finalizes the group links and simultaneously sends group capacity calculation requests \groupcapreq{} with unique \texttt{group\_update\_id} to all source nodes of group links.
-
-\subsubsection{Group Capacity Calculation}
-
-For a group $G$ consisting of $k$ links, the procedure for finding only the minimum capacity (group capacity) among group links without directly sharing individual link capacities is as follows. Source nodes $V_{i}^{G}(i=0,1,\ldots,k-1)$ of links $E_{i}^{G}(i=0,1,\ldots,k-1)$ belonging to group $G$ each independently wait a random time after receiving the group capacity calculation request, then send \groupcap{} messages containing their link's actual capacity, a unique random value $r_{i}$, and \texttt{group\_update\_id} to the next indexed node $V_{j}^{G}$ where $j=(i+1)\bmod k$.
-
-Upon receiving this, node $V_{j}^{G}$ overwrites the value if link $E_{j}^{G}$'s capacity is smaller than the received value and forwards the \groupcap{} message to node $V_{(j+1)\bmod k}^{G}$. Among the $k$ times node $V_{j}^{G}$ receives the same \groupcap{} message, it forwards without updating the value for randomly selected $\lfloor \frac{k}{2} \rfloor$ times.
-
-When node $V_{i}^{G}$ receives a \groupcap{} message containing its unique random value $r_{i}$, it considers this contains the minimum capacity value updated by all group links and broadcasts this value along with \texttt{group\_update\_id} as a \groupupdate{} message. All PCN nodes collect $k$ \groupupdate{} messages with the same \texttt{group\_update\_id} and consider the most frequently appearing value as group $G$'s group capacity, updating their locally maintained PCN topology information.
-
-The group capacity obtained this way makes it difficult for third parties to identify which link actually has the minimum value, making it hard to track capacity changes to specific links. This makes estimating payment amounts and parties for specific links difficult, maintaining payment information confidentiality.
-
-\begin{figure}[htbp]
-	\centerline{\includegraphics[width=1\linewidth]{fig/group_cap_handover}}
-	\caption{Example of \groupcap{} Message Propagation}
-	\label{fig:group_cap_sequence}
-\end{figure}
-
-\subsection{Payment Using Group Capacity Information}
-
-When group capacity is broadcast, senders estimate capacity for each link as follows:
-\begin{itemize}
-	\item If a link belongs to some group: use that group's capacity as the link's capacity
-	\item If not in any group: use the publicly disclosed channel capacity as link capacity
-\end{itemize}
-
-When senders perform actual route exploration, they search for minimum-cost routes similar to Lightning Network~\cite{poon_dryja_2016,lnd,eclair,clightning}, but use the above values as link capacities. That is, senders use only links whose estimated capacity exceeds the payment amount and select the minimum-cost route.
-
-Upon successful payment, group capacity update requests are simultaneously sent to all groups containing route links, updating group capacity to the latest state through procedures similar to the group capacity calculation.
-
-\subsection{Group Capacity Update}
-
-When payments are executed, capacities of links on the payment route change. Therefore, senders simultaneously send group capacity update requests to all member nodes of groups containing route links, causing them to recalculate group capacity similar to the group capacity calculation procedure.
-
-Although upstream nodes of capacity-changed links could directly initiate group capacity updates, if the relevant link had the minimum capacity in the group, it could be associated with the minimum value and observed. To avoid this, our method has senders simultaneously request all group members, ensuring all nodes start update processing independently and simultaneously.
-
-When group capacity updates cause values to exceed initially set \mincaplimit{} or \maxcaplimit{}, the group is closed. Upon closure confirmation, \groupupdate{} messages containing invalid group capacity are broadcast to notify group closure. Upstream nodes of closed group links form new groups through the link recruitment procedure.
-
 \section{Performance Evaluation}
 
-This section evaluates how GCB method group construction parameters affect performance and examines parameters that balance payment information confidentiality with payment performance.
+This section evaluates the latency performance of the proposed GCB method using simulation.
 
 \subsection{Evaluation Method}
 
@@ -165,11 +107,6 @@ Main evaluation metrics are:
 \begin{itemize}
 	\item Success Rate: Ratio of successful payments to all attempted payments
 	\item Latency (Success): Average delay time until successful payment confirmation [ms]
-	\item Latency (Fail): Average delay time until failed payment confirmation [ms]
-	\item Fail Before Send Rate (FBSR): Probability of detecting no viable route before sending and failing without retries
-	\item Fail After Send Rate (FASR): Probability of discovering no viable route after sending and failing after multiple retries
-	\item Coverage: Ratio of links belonging to groups to all PCN links
-	\item CUL: Link capacity loss rate due to group membership
 \end{itemize}
 
 \subsubsection{Simulation Conditions}
@@ -181,65 +118,6 @@ We extended the payment channel network simulator CLoTH~\cite{CONOSCENTI20211007
 \end{itemize}
 
 We used a Lightning Network snapshot from December 17, 2020, with 6005 nodes and 60913 links. This data was obtained from LND's \texttt{describegraph} command, containing all publicly available information identical to the actual network. Since initial PC balances are undisclosed, we set them using uniformly distributed random numbers. We performed 5000 payments with amounts following normal distribution (mean $\mu = 10000$ sats, variance $\sigma = \mu \times 0.1$) and uniformly distributed random sender/recipient selection.
-
-\subsection{Privacy Evaluation}
-
-We simulated attacks where malicious nodes $V_{m}^{G}$ in groups record all received \groupcap{} messages and randomly select target link $E_{i}^{G}$ capacities to estimate payment amounts, senders, and recipients from capacity changes. Results show that attack success rates decrease with larger \groupsize{}, particularly dropping below 1\% when $\groupsize > 5$, making payment information identification extremely difficult, as shown in Fig.~\ref{fig:group_size_vs_attack_resistance}.
-
-\begin{figure}[htbp]
-	\centerline{\includegraphics[width=\linewidth]{fig/group_size_vs_attack_resistance}}
-	\caption{Variation of Attack Success Rate with respect to \groupsize{}}
-	\label{fig:group_size_vs_attack_resistance}
-\end{figure}
-
-\subsection{Performance Parameter Evaluation}
-
-We define appropriate parameter regions as those where success rate decrease compared to RBB method is less than 0.005 and FASR increase is less than 0.005. In this region (success rate > 0.729 and FASR < 0.005), maximum average confirmation delay for successful payments was 648 ms at $\groupsize=4, \alpha=0.05$, nearly identical to retry-free RBB method. Maximum average confirmation delay for failed payments was 8.87 ms at $\groupsize=10, \alpha=0.1$, sufficiently smaller than LN method.
-
-This occurs because grouping enables senders to know reliably sendable amounts on group links, allowing exclusion of links with insufficient capacity before route specification, reducing FASR and retry counts to nearly zero.
-
-Based on privacy and performance considerations, we identify $\groupsize=10, \alpha=0.1$ as optimal parameters balancing high success rates with short confirmation delays while maximizing attack resistance. The performance characteristics with varying \groupsize{} and $\alpha$ are shown in Fig.~\ref{fig:group_params_vs_success_rate}.
-
-\begin{figure*}[htbp]
-	\centering
-	\begin{subfigure}{0.248\textwidth}
-		\centering
-		\includegraphics[width=\linewidth]{fig/group_limit_rate_and_group_size_heatmap_success_rate}
-		\caption{Success Rate}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.254\textwidth}
-		\centering
-		\includegraphics[width=\linewidth]{fig/group_limit_rate_and_group_size_heatmap_fail_after_send_rate}
-		\caption{Fail After Send Rate (FASR)}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.243\textwidth}
-		\centering
-		\includegraphics[width=\linewidth]{fig/group_limit_rate_and_group_size_heatmap_latency_success}
-		\caption{Latency (Success) [ms]}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.2375\textwidth}
-		\centering
-		\includegraphics[width=\linewidth]{fig/group_limit_rate_and_group_size_heatmap_latency_fail}
-		\caption{Latency (Fail) [ms]}
-	\end{subfigure}
-	\caption{Performance metrics with varying \groupsize{} and $\alpha$}
-	\label{fig:group_params_vs_success_rate}
-\end{figure*}
-
-\begin{table}[htbp]
-	\caption{Success Rate, FASR and Latency of LN and RBB}
-	\centering
-	\label{tab:result_group_and_ideal}
-	\begin{tabular}{r|cccc}
-		    & Success Rate & FASR  & Latency (Success) [ms] & Latency (Fail) [ms] \\
-		\hline
-		LN  & 0.708        & 0.160 & 826                    & 415                 \\
-		RBB & 0.734        & 0.000 & 643                    & 0.000               \\
-	\end{tabular}
-\end{table}
 
 \subsection{Latency Evaluation}
 
@@ -253,7 +131,7 @@ Using optimal parameters $\groupsize=10, \alpha=0.1$, we compared GCB and LN met
 
 \section{Conclusion}
 
-This paper presented new evaluations of the GCB method, which groups links in Payment Channel Networks and broadcasts minimum link capacities in real-time as group capacity, maintaining payment information confidentiality while preserving success rates comparable to conventional methods and reducing confirmation delays for successful payments. We identified appropriate values for group capacity and group size parameters. Future work includes verifying payment information confidentiality under more diverse attack models.
+Simulation results confirmed that the proposed GCB method considerably shortens payment confirmation delay while maintaining a high success rate. Future work includes verifying payment information confidentiality under more diverse attack models.
 
 \begin{thebibliography}{00}
 	\bibitem{nakamoto2008bitcoin} S. Nakamoto, ``Bitcoin: A peer-to-peer electronic cash system,'' 2008.

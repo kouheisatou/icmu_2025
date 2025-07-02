@@ -28,7 +28,7 @@ jobs:
 
       - name: Build LaTeX document
         run: |
-          latexmk -pdf -output-directory=out paper.tex
+          latexmk -C -pdf -output-directory=out paper.tex
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
