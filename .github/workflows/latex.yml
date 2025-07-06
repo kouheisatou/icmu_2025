@@ -19,8 +19,8 @@ jobs:
       - name: Lint LaTeX source
         run: lacheck paper.tex
 
-      - name: Compile LaTeX document
-        uses: latex-actions/latex-action@v2
+      - name: Build LaTeX document
+        uses: xu-cheng/latex-action@3.3.0
         with:
           root_file: paper.tex
 
