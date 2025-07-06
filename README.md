@@ -71,7 +71,7 @@ latexmk -pdf
 ## File Structure
 - `paper.tex` : Main TeX file
 - `IEEEtran.cls` : IEEE paper class file
-- `IEEEtran.bst` : IEEE bibliography style
+- `IEEEtranS.bst` : IEEE bibliography style
 - `out/` : Output directory (auto-generated)
 - `.latexmkrc` : Configuration file for latexmk
 
