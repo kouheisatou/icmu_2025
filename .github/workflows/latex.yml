@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -18,6 +18,12 @@ jobs:
 
       - name: Lint LaTeX source
         run: lacheck paper.tex
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Build LaTeX document
         uses: xu-cheng/latex-action@3.3.0
