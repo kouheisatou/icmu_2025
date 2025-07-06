@@ -19,17 +19,18 @@ jobs:
       - name: Set up TeX Live
         uses: xu-cheng/texlive-action@v2
         with:
-          packages: >-
-            scheme-medium
-            latexmk
-            latexindent
+          scheme: scheme-medium
+
+      - name: Install extra TeX packages
+        run: |
+          tlmgr install latexmk latexindent
 
       - name: Lint LaTeX source
         run: lacheck paper.tex
 
       - name: Build LaTeX document
         run: |
-          latexmk -pdf -output-directory=out paper.tex
+          latexmk paper.tex
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
