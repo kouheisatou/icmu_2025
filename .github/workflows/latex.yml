@@ -16,24 +16,16 @@ jobs:
       - name: Install lacheck
         run: sudo apt-get update && sudo apt-get install -y lacheck
 
-      - name: Set up TeX Live
-        uses: xu-cheng/texlive-action@v2
-        with:
-          scheme: scheme-medium
-
-      - name: Install extra TeX packages
-        run: |
-          tlmgr install latexmk latexindent
-
       - name: Lint LaTeX source
         run: lacheck paper.tex
 
-      - name: Build LaTeX document
-        run: |
-          latexmk paper.tex
+      - name: Compile LaTeX document
+        uses: latex-actions/latex-action@v2
+        with:
+          root_file: paper.tex
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
         with:
           name: paper-pdf
-          path: out/paper.pdf 
+          path: paper.pdf 
