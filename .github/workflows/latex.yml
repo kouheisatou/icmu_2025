@@ -16,11 +16,7 @@ jobs:
       - name: Set up TeX Live
         uses: teatimeguest/setup-texlive-action@v3
         with:
-          packages: >-
-            scheme-medium
-            latexmk
-            latexindent
-            lacheck
+          packages: scheme-full
 
       - name: Lint LaTeX source
         run: |
