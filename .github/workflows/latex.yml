@@ -13,10 +13,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up TeX Live
-        uses: teatimeguest/setup-texlive-action@v3
+      - name: Install TeX Live
+        uses: latex-actions/setup-texlive@v2
         with:
-          packages: scheme-full
+          packages: >-
+            scheme-full
+            latexmk
+            lacheck
 
       - name: Lint LaTeX source
         run: |
