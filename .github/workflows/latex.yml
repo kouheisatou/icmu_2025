@@ -13,6 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Install lacheck
+        run: sudo apt-get update && sudo apt-get install -y lacheck
+
       - name: Set up TeX Live
         uses: xu-cheng/texlive-action@v2
         with:
@@ -20,11 +23,9 @@ jobs:
             scheme-medium
             latexmk
             latexindent
-            lacheck
 
       - name: Lint LaTeX source
-        run: |
-          lacheck paper.tex
+        run: lacheck paper.tex
 
       - name: Build LaTeX document
         run: |
