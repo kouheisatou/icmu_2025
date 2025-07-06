@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up TeX Live
-        uses: teatimeguest/setup-texlive-action@v3
+        uses: xu-cheng/texlive-action@v2
         with:
           packages: >-
             scheme-medium
