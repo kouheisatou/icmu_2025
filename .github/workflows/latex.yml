@@ -14,12 +14,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install TeX Live
-        uses: aminya/setup-texlive@v2
-        with:
-          packages: >-
-            scheme-full
-            latexmk
-            lacheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-full latexmk lacheck
 
       - name: Lint LaTeX source
         run: |
