@@ -55,7 +55,7 @@
 
 Payment channels (PCs) move most transactions off-chain and thus scale blockchains~\cite{poon_dryja_2016}. A Payment Channel Network (PCN) forwards a payment through several PCs, but the sender must choose a path whose every link has enough capacity (i.e., upstream balance).
 
-Here a dilemma arises.  If each link publicly reveals its current balance, the sender can pick a feasible path on the first try, but privacy is lost because observers can trace payments.  If balances remain secret, privacy is kept, yet the sender learns feasibility only after the attempt, causing expensive retries and long delays.  Lightning's probabilistic routing slightly mitigates the delay but still struggles with large amounts.
+Here a dilemma arises.  If each link publicly reveals its current balance, the sender can pick a feasible path on the first try, but privacy is lost because observers can trace payments.  If balances remain secret, privacy is kept, yet the sender learns feasibility only after the attempt, causing expensive retries and long delays.  Lightning Network's~\cite{lnbolt} probabilistic routing slightly mitigates the delay but still struggles with large amounts.
 
 This paper tackles the privacy–latency dilemma.  We evaluate the Group Capacity Broadcast (GCB) method, which discloses only the minimum balance inside a link group, thereby hiding individual balances while allowing the sender to rule out hopeless paths in advance.
 

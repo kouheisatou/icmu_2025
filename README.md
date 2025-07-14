@@ -59,13 +59,8 @@ sudo tlmgr install lacheck latexindent
 2. Run the following command to generate the PDF:
 
 ```sh
-latexmk
-```
-
-Or, to explicitly specify `pdflatex`:
-
-```sh
-latexmk -pdf
+latexmk -C
+latexmk -pdf paper.tex
 ```
 
 ## File Structure
