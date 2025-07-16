@@ -56,39 +56,44 @@
 
 Payment Channel Networks (PCN)~\cite{poon_dryja_2016}, which connect multiple payment channels, have recently gained attention as a solution to blockchain~\cite{nakamoto2008bitcoin} scalability problems.
 
-In a payment channel, two participants who intend to transact first contribute sufficient funds for future transactions and send them to a blockchain address using transactions that can only be unlocked with the consensus of both participants.
-The total amount of these contributed funds is called the channel capacity, and this value is publicly disclosed on the blockchain.
-Payments within a payment channel are executed by updating each participant's balance, but these changes are not recorded on the blockchain, enabling instant payment settlement.
+A payment channel is created by two participants that contribute sufficient funds for future transactions.The funds are sent to a blockchain address and can only be unlocked with the consensus of both participants.
+The total amount of committed funds is called the channel capacity, witch is publicly disclosed on the blockchain.
+Payments within a payment channel are executed by updating each participant's share of the funds called balance, but these changes are not recorded on the blockchain, enabling instant payment settlement.
 
 A network constructed by connecting multiple payment channels is called a Payment Channel Network (PCN).
-In a PCN, senders can safely and quickly transfer funds to recipients they are not directly connected to through multiple payment channels using script-based transactions called HTLCs~\cite{poon_dryja_2016}.
-Furthermore, PCNs not only process payments at high speed but also offer unique features not available in blockchains: since balances between payment channel participants are not publicly disclosed, payment information such as sender, recipient, and payment amount can be concealed from unrelated third parties.
+In a PCN, senders can securely and quickly transfer funds to recipients that are not directly connected to through multiple payment channels using script-based transactions called HTLCs~\cite{poon_dryja_2016}.
+Furthermore, PCN do not only process payments at high speed but also offer unique features not available in blockchains: since balances of payment channel participants are not publicly disclosed, payment information such as sender, recipient, and payment amount can be concealed from unrelated third parties.
 
-When modeling PCN users as nodes in a directed graph and payment channels as bidirectional links between nodes, the balance of each participant in each channel corresponds to the link capacity in that direction, while transaction fees correspond to link costs. This is because it is impossible to send amounts exceeding a participant's balance in each direction of each payment channel.
-Unlike conventional communication networks, the link capacity in each direction of a payment channel represents each participant's share of the initially contributed funds. Therefore, their sum always equals the channel capacity and remains constant, with each direction's capacity changing every time a payment is made.
-Additionally, since link capacity corresponds to the balance between participants within a payment channel, it is not disclosed to parties other than the participants themselves.
-Consequently, senders cannot accurately determine link capacities and must decide on payment routes and attempt payments without considering link capacity, repeatedly retrying with alternative payment routes each time a payment fails.
+When modeling PCN users as nodes in a directed graph and payment channels as bidirectional links between nodes, the balance of each participant in each channel corresponds to the capacity of the link whose starting node is the participant.
+Additionally, transaction fees correspond to link costs.
+It is impossible to send amounts of payment exceeding a participant's balance of each payment channel.
+Namely, unlike conventional communication networks, the sums of capacity for both links in a payment channel always equals the channel capacity and remains constant, with each direction's capacity changing every time a payment is made.
+Additionally, each participants's balance of a payment channel is not disclosed to parties of other channels.
+Consequently, a sender must decide payment routes and attempt a payments without link capacity, leading to the repeated retry of the payment with alternative routes each time the payment fails.
 
-A critical dilemma emerges: payment channels move most transactions off-chain to scale blockchains~\cite{poon_dryja_2016}, but senders must choose paths where every link has sufficient capacity (i.e., upstream balance).
+A critical dilemma emerges: payment channels numerous transactions off-chain to scale blockchains~\cite{poon_dryja_2016}, but senders must choose paths where every link has sufficient capacity (i.e., upstream balance).
 
 If each link publicly reveals its current balance, the sender can select a feasible path on the first attempt, but privacy is lost because observers can trace payments.
 If balances remain secret, privacy is preserved, yet the sender learns feasibility only after the attempt, causing expensive retries and long delays.
 The Lightning Network's~\cite{lnbolt} probabilistic routing slightly mitigates the delay but still struggles with large amounts.
 
 This paper addresses the privacy–latency dilemma.
-We evaluate the Group Capacity Broadcast (GCB) method, which discloses only the minimum balance within a link group, thereby hiding individual balances while allowing senders to rule out infeasible paths in advance.
+We present the Group Capacity Broadcast (GCB) method, which discloses only the minimum balance within a link group, thereby hiding individual balances while allowing senders to rule out infeasible paths in advance.
 
 \section{GCB Method}
 
-The GCB method groups links with similar capacities and broadcasts only the minimum capacity within each group.
+In the GCB method, multiple links having capacity close to each other form a group and broadcasts only the minimum capacity of the member links.
+The specific process is as follows.
 A group constructor recruits links by broadcasting \groupreq{} messages that specify a capacity range [\mincaplimit{}, \maxcaplimit{}].
-Once \groupsize{} links have joined, the group must securely calculate its minimum capacity without exposing individual link balances.
+Once \groupsize{} number of links have joined, the group calculates its minimum capacity without exposing individual link balances.
 
-The key innovation is a privacy-preserving minimum value computation protocol.
-Each group member initiates a \groupcap{} message containing its actual capacity and a unique identifier, which then circulates through the group in a ring topology to ensure all members participate and prevent message loss.
-As the message traverses each node, the capacity value is updated only if the current node's capacity is smaller, ensuring the final result represents the true minimum.
-To prevent observers from correlating capacity changes with specific links and maintain unlinkability, nodes implement a probabilistic obfuscation mechanism: they randomly abstain from updating the message approximately half the time during circulation, even when their capacity is smaller. This randomization ensures that external observers cannot determine which node caused a capacity update, as the absence of an update does not indicate the node's actual capacity relative to the current minimum.
-When a node receives its own message identifier after the message completes the full circuit, it recognizes the validity of the minimum value and broadcasts it network-wide as a \groupupdate{} message.
+The key innovation is a privacy-preserving minimum value finding protocol.
+Each group member links (more precisely, the starting node of each link) create a \groupcap{} message containing its actual capacity and a unique identifier, then circulates the message to all members of the group in a ring topology to ensure all members participate and prevent message loss.
+As the message traverses each node, the capacity value in the message is updated only if the link's capacity is smaller, ensuring the final result represents the true minimum.
+To prevent each node or external observers from knowing capacity of other specific links and maintain anonimity of link capacity, nodes perform probabilistic obfuscation.
+They randomly abstain from updating the message approximately half the time during circulation, even when their capacity is smaller.
+This ensures that observers in the group cannot determine which node caused a capacity update, as the absence of an update does not necessarily mean the node's actual capacity is unchanged.
+When a node receives its own message identifier after the message completes the circulation, it recognizes the validity of the minimum value and broadcasts it network-wide as a \groupupdate{} message.
 This distributed consensus mechanism ensures that no single node can determine which link actually holds the minimum capacity, thereby maintaining payment privacy.
 Figure~\ref{fig:group_cap_handover} illustrates the detailed message flow of this protocol.
 
@@ -97,8 +102,8 @@ This means that each individual link's true capacity within the group is guarant
 Senders use group capacity for grouped links and channel capacity for ungrouped links, applying standard shortest-path algorithms~\cite{lnd,eclair,clightning}.
 After successful payments, affected groups recalculate their minimum capacity to reflect balance changes, maintaining accuracy while preserving anonymity.
 
-Privacy is preserved because observers cannot determine which specific link caused a group capacity change due to the probabilistic obfuscation mechanism.
-Groups are closed when capacity updates exceed the initial range, triggering reformation with updated parameters to adapt to changing network conditions.
+Privacy is preserved change of specific link capacity is not exposed thanks to the probabilistic obfuscation mechanism during group capacity update process.
+Groups are closed when the value of group capacity exceed the specified range, then they join new groups with different parameters to adapt changing network conditions.
 
 \begin{figure}[htbp]
 	\centerline{\includegraphics[width=\linewidth]{fig/group_cap_handover}}
@@ -108,20 +113,20 @@ Groups are closed when capacity updates exceed the initial range, triggering ref
 
 \section{Performance Evaluation}
 
-This section evaluates the latency performance of the proposed GCB method through simulation.
+This section evaluates the latency performance of the proposed GCB method through simulation, where latency is defined as the time elapsed from payment initiation until payment confirmation (regardless of success or failure).
 
 \subsection{Simulation Conditions}
 We extended the payment channel network simulator CLoTH~\cite{CONOSCENTI2021100717}, which accurately reproduces Lightning Network HTLCs, by implementing the GCB method.
 We used a Lightning Network snapshot from December 17, 2020, containing 6,005 nodes and 60,913 links.
-This data was obtained from LND's \texttt{describegraph} command and contains all publicly available information identical to that in the actual network.
-Since initial payment channel balances are not disclosed in practice, we set them using uniformly distributed random values.
+This data was obtained from LND's~\cite{lnd} \texttt{describegraph} command and contains all publicly available information identical to that in the actual network.
+Since initial payment channel balances are not published, we set them using uniformly distributed random values.
 We performed 5,000 payments with amounts following a normal distribution (mean $\mu = 10,000$ satoshis, variance $\sigma = \mu \times 0.1$) and uniformly distributed random sender and recipient selection.
 
 \subsection{Latency Evaluation}
 
-We compared the GCB method with the conventional Lightning Network probabilistic routing method for varying average payment amounts.
+We compared the GCB method with the conventional Lightning Network probabilistic routing method for varying amount of payment at a time.
 The results show that while the conventional method's confirmation delays increase significantly with payment amount, the GCB method's delays increase relatively little.
-For large payments, the conventional method experiences many retries due to considering only failure frequency without considering actual link capacity, thereby prolonging confirmation time.
+For large amount of payments, the conventional method experiences many retries since it does not have information of actual link capacity and judge link availability only by its post failure frequency, thereby prolonging confirmation time.
 The GCB method eliminates unnecessary retries by disclosing conservative capacity bounds, enabling immediate pre-transmission determination of infeasible payments and minimizing confirmation delay increases even for large amounts, as demonstrated in Fig.~\ref{fig:pmt_amt_vs_time}.
 
 \begin{figure}[htbp]
