@@ -37,19 +37,19 @@ plt.rcParams["font.size"] = 16
 plt.figure()
 
 # グラフの描画
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 5))
 
-# "cloth_original" のプロット（赤系）
+# "cloth_original" のプロット（黒色）
 plt.plot(df_cloth_original_filtered["average_payment_amount"], df_cloth_original_filtered["time_success/average"],
-         label="LN (Average)", markersize=4, marker='s', color='tab:green', linestyle="-")
+         label="LN (Average)", markersize=4, marker='s', color='gray', linestyle="-")
 plt.plot(df_cloth_original_filtered["average_payment_amount"], df_cloth_original_filtered["time_success/95-percentile"],
-         label="LN (95%ile)", markersize=4, marker='s', color='tab:green', linestyle="dashed")
+         label="LN (95%ile)", markersize=4, marker='s', color='gray', linestyle="dashed")
 
-# "group_routing" のプロット（青系）
+# "group_routing" のプロット（グレー）
 plt.plot(df_group_routing_filtered["average_payment_amount"], df_group_routing_filtered["time_success/average"],
-         label="GCB (Average)", markersize=4, marker='o', color='tab:orange', linestyle="-")
+         label="GCB (Average)", markersize=4, marker='o', color='black', linestyle="-")
 plt.plot(df_group_routing_filtered["average_payment_amount"], df_group_routing_filtered["time_success/95-percentile"],
-         label="GCB (95%ile)", markersize=4, marker='o', color='tab:orange', linestyle="dashed")
+         label="GCB (95%ile)", markersize=4, marker='o', color='black', linestyle="dashed")
 
 # 軸ラベルの設定
 plt.xlabel("Average Payment Amount [satoshi]")
