@@ -63,7 +63,7 @@ Payments in the payment channel are executed by updating each participant's shar
 
 A network constructed by connecting multiple payment channels is called a Payment Channel Network (PCN).
 In PCNs, senders can securely and quickly transfer funds to recipients that senders are not directly connected to through multiple payment channels using script-based transactions called HTLCs~\cite{poon_dryja_2016}.
-Furthermore, PCNs do not only process payments at high speed but also offer unique features not available in blockchains: since balances of payment channel participants are not publicly disclosed, payment information such as sender, recipient, and payment amount is hidden from unrelated third parties.
+PCNs do not only process payments at high speed but also offer unique features not available in blockchains: since balances of payment channel participants are not publicly disclosed, payment information such as sender, recipient, and payment amount is hidden from unrelated third parties.
 
 When modeling PCNs users as nodes in a directed graph and payment channels as bidirectional links between nodes, the balance of each participant in each channel corresponds to the capacity of the link whose starting node is the participant.
 Additionally, transaction fees correspond to link costs.
