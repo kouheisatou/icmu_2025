@@ -67,10 +67,10 @@ Furthermore, PCN do not only process payments at high speed but also offer uniqu
 
 When modeling PCN users as nodes in a directed graph and payment channels as bidirectional links between nodes, the balance of each participant in each channel corresponds to the capacity of the link whose starting node is the participant.
 Additionally, transaction fees correspond to link costs.
-It is impossible to send amounts of payment exceeding a participant's balance of each payment channel.
+It is impossible to send payment amounts exceeding a participant's balance of each payment channel.
 Namely, unlike conventional communication networks, the sums of capacity for both links in a payment channel always equals the channel capacity and remains constant, with each direction's capacity changing every time a payment is made.
 Additionally, each participant's balance of a payment channel is not disclosed to parties of other channels.
-Consequently, a sender must decide a payment path and attempt a payment without information of link capacity along the path, and thus payment attempt often results in failure because capacity of some link(s) on the path is smaller than the amount of payment. In this case, attempt is retried using alternative routes until it is successful and it incurs additional delay of payment.
+Consequently, a sender must decide a payment path and attempt a payment without information of link capacity along the path, and thus payment attempt often results in failure because capacity of some link(s) on the path is smaller than the payment amount. In this case, attempt is retried using alternative routes until it is successful and it incurs additional delay of payment.
 
 A critical dilemma emerges: payment channels are effective for scaling blockchains~\cite{poon_dryja_2016} by moving numerous transactions off-chain, but senders must choose paths where every link has sufficient capacity (i.e., upstream balance).
 
@@ -127,7 +127,7 @@ We performed 5,000 payments with amounts following a normal distribution (mean $
 
 We compared the GCB method with the conventional Lightning Network probabilistic routing method for varying payment amounts at a time.
 The results show that while the conventional method's confirmation delays increase significantly with payment amount, the GCB method's delays increase relatively little.
-For large amounts of payments, the conventional method experiences many retries since it does not have information of actual link capacity and judges link availability only by its past failure frequency, thereby prolonging confirmation time.
+For large payment amounts, the conventional method experiences many retries since it does not have information of actual link capacity and judges link availability only by its past failure frequency, thereby prolonging confirmation time.
 The GCB method eliminates unnecessary retries by disclosing conservative capacity bounds, enabling immediate pre-transmission determination of infeasible payments and minimizing confirmation delay increases even for large amounts, as demonstrated in Fig.~\ref{fig:pmt_amt_vs_time}.
 
 \begin{figure}[htbp]
